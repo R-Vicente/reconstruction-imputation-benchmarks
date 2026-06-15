@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>When Protocol Can Decide the Winner — Imputation Benchmarking</title>
+<meta name="description" content="A sensitivity analysis of reporting choices in missing-data imputation benchmarks. Extended results, figures and reproducible code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===================== NAV ===================== -->
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">imputation&#8209;benchmarking<span class="dot">.</span></span>
+    <div class="nav-links">
+      <a href="#abstract" data-spy>Abstract</a>
+      <a href="#findings" data-spy>Findings</a>
+      <a href="#figures" data-spy>Figures</a>
+      <a href="#tables" data-spy>Tables</a>
+      <a href="#code" data-spy>Code</a>
+      <a href="#" class="nav-gh" data-repo target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-meta">
+      <span>Working paper · <b>2026</b></span>
+      <span>Benchmarking methodology</span>
+      <span><b>12</b> datasets · <b>6</b> methods · <b>100</b> replicates</span>
+    </div>
+    <h1>When Protocol Can Decide the Winner</h1>
+    <p class="subtitle">A sensitivity analysis of reporting choices in missing-data imputation benchmarks.</p>
+
+    <div class="authors">
+      <span class="author">Ricardo Vicente<sup>1</sup></span>
+      <span class="author">Francisco Antunes<sup>1,2</sup></span>
+    </div>
+    <ul class="affils">
+      <li><sup>1</sup><a href="https://www.iscac.pt/en/" target="_blank" rel="noopener">Coimbra Business School — ISCAC, Polytechnic Institute of Coimbra</a></li>
+      <li><sup>2</sup><a href="https://www.uc.pt/" target="_blank" rel="noopener">University of Coimbra, Department of Informatics Engineering, CISUC</a></li>
+    </ul>
+
+    <div class="hero-actions">
+      <a href="#findings" class="btn primary">Browse the results <span class="arrow">→</span></a>
+      <a href="#code" class="btn">Reproduce the experiments</a>
+      <a href="#" class="btn" data-repo target="_blank" rel="noopener">Repository ↗</a>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== ABSTRACT ===================== -->
+<section id="abstract" class="abstract">
+  <div class="wrap">
+    <div class="abstract-grid">
+      <div class="label">
+        <span class="eyebrow">Abstract</span>
+        <div class="kw">
+          <span>missing data</span>
+          <span>imputation</span>
+          <span>benchmarking</span>
+          <span>evaluation metrics</span>
+          <span>NRMSE</span>
+          <span>experimental design</span>
+          <span>reproducibility</span>
+        </div>
+      </div>
+      <div class="abstract-body">
+        <p>Imputation methods are almost always compared on simulated benchmarks: complete data are corrupted, reconstructed, and scored against the truth. What rarely gets stated is that the score depends on a string of protocol decisions that have nothing to do with the imputation itself. We separate these decisions into two kinds. Some change the <em>number</em> a benchmark computes — which NRMSE denominator is used, whether error is measured on the imputed cells or the whole matrix, how per-variable errors are averaged. Others change the <em>problem</em> the method is asked to solve — how the data are made incomplete, under which mechanism, at what rate, on which datasets.</p>
+        <p>Running six methods across twelve datasets, varying one dimension at a time, we show that both kinds bite. The same missForest reconstruction of California Housing reads as <span class="hl">0.069 or 0.667</span> depending only on the denominator. Scoring on the full matrix instead of the imputed cells shrinks every gap between methods by <span class="hl">a fixed factor of √p</span>. Moving from MCAR to a logistic MAR mechanism changes the best-performing method on <span class="hl">seven of the twelve datasets</span>, although the methods themselves are unchanged. Under plain uniform MCAR, by contrast, the competitive methods were statistically indistinguishable (Friedman <span class="hl">p = 0.147</span>), so which one appears best depends largely on the datasets chosen. And on a dataset whose variables are almost uncorrelated, <span class="hl">no competitive method improved on simple mean imputation</span>.</p>
+        <p>We close with two reporting frameworks grounded in these findings — a small comparability core that lets results from different studies be read against each other, and a fuller protocol for what a benchmark might document — offered as pragmatic recommendations for the reconstruction-based paradigm we examine rather than as universal rules.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FINDINGS ===================== -->
+<section id="findings" class="findings">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="num">01</span>
+      <h2>What the protocol decides</h2>
+      <span class="meta">four headline results</span>
+    </div>
+    <div class="findings-grid">
+      <div class="finding">
+        <span class="fnum">Metric — NRMSE denominator</span>
+        <span class="fbig">0.069&nbsp;<small>→</small>&nbsp;0.667</span>
+        <span class="ftext">The <b>same missForest reconstruction</b> of California Housing, scored on a single dataset at 20% MCAR, reads almost ten-fold apart depending only on whether NRMSE is normalised by range or by standard deviation.</span>
+      </div>
+      <div class="finding">
+        <span class="fnum">Evaluation domain</span>
+        <span class="fbig">×&#8202;√p</span>
+        <span class="ftext">Scoring error on the <b>full matrix</b> rather than on imputed cells alone compresses every gap between methods by a fixed, predictable factor — a difference of presentation, not of quality.</span>
+      </div>
+      <div class="finding">
+        <span class="fnum">Missingness mechanism</span>
+        <span class="fbig">7&nbsp;<small>of</small>&nbsp;12</span>
+        <span class="ftext">Moving from MCAR to a logistic <b>MAR</b> mechanism changes the identity of the best-performing method on seven of the twelve datasets, although the methods are unchanged.</span>
+      </div>
+      <div class="finding">
+        <span class="fnum">Dataset selection — mean |r| ≈ 0.074</span>
+        <span class="fbig">none</span>
+        <span class="ftext">On a near-uncorrelated dataset, <b>no competitive method improved on mean imputation</b>. Dataset choice alone can invert a benchmark's conclusion.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FIGURES ===================== -->
+<section id="figures" class="figures">
+  <div class="wrap-wide">
+    <div class="section-head">
+      <span class="num">02</span>
+      <h2>Figures</h2>
+      <span class="meta">PNG · click to download</span>
+    </div>
+
+    <figure class="figure">
+      <div class="figure-bar">
+        <span class="fid">Fig. 1</span>
+        <h3>Three amputation algorithms for MCAR</h3>
+      </div>
+      <div class="figure-frame">
+        <img src="img/fig1_amputation.png" alt="Missingness patterns for uniform, by-variable and blockwise amputation" loading="lazy">
+      </div>
+      <div class="figure-foot">
+        <p>Uniform, by-variable, and blockwise amputation illustrated on an 8-variable, 20-observation matrix at 20% missingness. Studies using the label “MCAR” may implement any of these variants, yet the distinction is almost never reported.</p>
+        <a class="figure-dl" href="img/fig1_amputation.png" download>↓ &nbsp;fig1_amputation.png</a>
+      </div>
+    </figure>
+
+    <figure class="figure">
+      <div class="figure-bar">
+        <span class="fid">Fig. 2</span>
+        <h3>Scale factor between NRMSE normalisations per dataset</h3>
+      </div>
+      <div class="figure-frame">
+        <img src="img/fig2_scale_factor.png" alt="Heatmap of NRMSE_sd over NRMSE_range scale factor per dataset and method" loading="lazy">
+      </div>
+      <div class="figure-foot">
+        <p>The ratio NRMSE<sub>sd</sub> / NRMSE<sub>range</sub> (computed for missForest under 20% MCAR) ranges from 3.6 (Auto MPG) to 9.7 (California Housing). Two studies using different denominators are computing genuinely different quantities.</p>
+        <a class="figure-dl" href="img/fig2_scale_factor.png" download>↓ &nbsp;fig2_scale_factor.png</a>
+      </div>
+    </figure>
+
+    <figure class="figure">
+      <div class="figure-bar">
+        <span class="fid">Fig. 3</span>
+        <h3>Ranking shifts across amputation conditions</h3>
+      </div>
+      <div class="figure-frame">
+        <img src="img/fig3_rank_change.png" alt="Parallel-coordinate ranking plots per dataset across five amputation conditions" loading="lazy">
+      </div>
+      <div class="figure-foot">
+        <p>Method rankings traced across the five amputation conditions for each dataset. missForest improves under MAR; IterReg worsens most sharply. The Friedman test among competitive methods shifts from non-significant (p = 0.147) under MCAR to significant (p = 0.031) under MAR-aggregate.</p>
+        <a class="figure-dl" href="img/fig3_rank_change.png" download>↓ &nbsp;fig3_rank_change.png</a>
+      </div>
+    </figure>
+
+    <figure class="figure">
+      <div class="figure-bar">
+        <span class="fid">Fig. 4</span>
+        <h3>Degradation curves: NRMSE<sub>sd</sub> across missingness rates (5%–50%)</h3>
+      </div>
+      <div class="figure-frame">
+        <img src="img/fig4_degradation.png" alt="Degradation curves of NRMSE_sd against missingness rate per dataset" loading="lazy">
+      </div>
+      <div class="figure-foot">
+        <p>All methods converge toward NRMSE<sub>sd</sub> ≈ 1.0 at high rates. SoftImpute overtakes at 40–50% on six datasets; Heart Failure converges from above (methods worse than baseline); on Penguins, k-NN leads at every rate.</p>
+        <a class="figure-dl" href="img/fig4_degradation.png" download>↓ &nbsp;fig4_degradation.png</a>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== TABLES ===================== -->
+<section id="tables" class="tables">
+  <div class="wrap-wide">
+    <div class="section-head">
+      <span class="num">03</span>
+      <h2>Tables</h2>
+      <span class="meta">filter rows · download CSV</span>
+    </div>
+    <div class="tables-layout">
+      <div class="table-list" id="tableList"></div>
+      <div class="table-panel" id="tablePanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CODE ===================== -->
+<section id="code" class="code">
+  <div class="wrap-wide">
+    <div class="section-head">
+      <span class="num">04</span>
+      <h2>Reproduce</h2>
+      <span class="meta">~105,600 imputations · resumable</span>
+    </div>
+
+    <div class="repro">
+      <div class="step">
+        <span class="sn">STEP 1</span>
+        <h4>Install</h4>
+        <code>pip install -r requirements.txt</code>
+        <p>Python 3.12. All twelve datasets load automatically from scikit-learn, seaborn and UCI — no manual downloads.</p>
+      </div>
+      <div class="step">
+        <span class="sn">STEP 2</span>
+        <h4>Run</h4>
+        <code>python nb_master_compute.py</code>
+        <p>Writes one JSON checkpoint per condition to <code>results/</code>. Each is saved as it completes, so the run can be interrupted and resumed.</p>
+      </div>
+      <div class="step">
+        <span class="sn">STEP 3</span>
+        <h4>Analyse</h4>
+        <code>load_all_results()</code>
+        <p>Fixed seeds (base 42) and a shared amputation mask per replicate make results reproducible. Full sweep ≈ 8–12 h on a modern machine.</p>
+      </div>
+    </div>
+
+    <div class="code-layout">
+      <div class="file-list" id="fileList"></div>
+      <div class="code-panel" id="codePanel"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="footer">
+  <div class="wrap">
+    <div class="cite-grid">
+      <div class="cite-block">
+        <h3>How to cite</h3>
+        <div class="bibtex" id="bibtex"><button class="cite-copy" id="citeCopy">Copy</button>@article{<span class="bk">vicente2026protocol</span>,
+  title   = {When Protocol Can Decide the Winner: A Sensitivity
+             Analysis of Reporting Choices in Missing-Data
+             Imputation Benchmarks},
+  author  = {Vicente, Ricardo and Antunes, Francisco},
+  year    = {2026},
+  note    = {Working paper},
+}</div>
+      </div>
+      <div class="cite-block">
+        <h3>About this page</h3>
+        <a class="foot-logo" href="https://www.iscac.pt/en/" target="_blank" rel="noopener">
+          <img src="img/cbs-iscac.png" alt="Coimbra Business School — ISCAC, Polytechnic Institute of Coimbra">
+        </a>
+        <p class="foot-meta">
+          <span class="eyebrow">Reproducibility companion</span>
+          This site hosts extended results, all figures and the complete
+          reproducible source for the paper. Tables are downloadable as CSV,
+          figures as PNG, and the full Python library as <code>.py</code> files.
+          <br><br>
+          Correspondence — Coimbra Business School (ISCAC), Polytechnic
+          Institute of Coimbra · University of Coimbra, CISUC/DEI.
+          <br><br>
+          <a href="#" data-repo target="_blank" rel="noopener">View the repository on GitHub ↗</a>
+        </p>
+      </div>
+    </div>
+    <div class="foot-rule"></div>
+    <div class="foot-base">
+      <span>Vicente &amp; Antunes · 2026</span>
+      <span>Code &amp; data released for reproducibility</span>
+    </div>
+  </div>
+</footer>
+
+<script src="code_data.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
